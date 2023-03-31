@@ -1,9 +1,11 @@
 package hw3;
-import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.Scanner;
+import java.util.Random;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -13,7 +15,6 @@ public class Generator {
     Connection dbcon;
 
     public Generator(String db, String user, String pass) throws Exception {
-        Class.forName("com.mysql.jdbc.Driver");
         dbcon = DriverManager.getConnection(db, user, pass);
     }
 
@@ -24,7 +25,7 @@ public class Generator {
     }
 
     /**
-     * Generates and inserts into database 100 names.
+     * Generates and inserts into database 104 names.
      * @param reset true if we want to reset the values already in the table
      */
     public void generateNames(boolean reset) {
@@ -39,45 +40,58 @@ public class Generator {
         }
 
         try {
-            insert(raw, reset);
+            studentInsert(raw, reset);
         } catch (Exception e) {
             System.out.println("something went wrong inserting values into db");
         }
 
-
+        System.out.println("student db insertion success");
     }
 
+    /**
+     * retrieves an array of json objects from an api
+     * @param endpoint api endpoint
+     * @param query api query
+     * @param api_key api key
+     * @return an array of json objects, or null if not successful
+     */
     private JSONArray retrieve(String endpoint, String query, String api_key) {
         try {
             URL url = new URL(endpoint + query);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
-            connection.setRequestProperty("X-Api-Key", api_key);
+            if(api_key != null)
+                connection.setRequestProperty("X-Api-Key", api_key);
 
             int statusCode = connection.getResponseCode();
             if (statusCode == HttpURLConnection.HTTP_OK) {
-                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                String inputLine;
+                Scanner read = new Scanner(new InputStreamReader(connection.getInputStream()));
                 StringBuilder response = new StringBuilder();
 
-                while ((inputLine = in.readLine()) != null) {
-                    response.append(inputLine);
+                while (read.hasNext()) {
+                    response.append(read.nextLine());
                 }
-                in.close();
+                read.close();
 
                 JSONParser parse = new JSONParser();
                 return (JSONArray) parse.parse(String.valueOf(response));
             } else {
-                System.out.println("status code: " + statusCode);
+                System.out.println("connection denied - status code: " + statusCode);
                 return null;
             }
 
         } catch (Exception e) {
+            e.printStackTrace();
             return null;
         }
     }
 
-    private void insert(JSONArray arr, boolean reset) throws SQLException {
+    private void studentInsert(JSONArray arr, boolean reset) throws SQLException {
+        if(reset) {
+            Statement stmt = dbcon.createStatement();
+            stmt.executeUpdate("delete from students");
+        }
+
         String s = "insert into students values(?, ?, ?)";
         PreparedStatement p = dbcon.prepareStatement(s);
         for(Object obj : arr) {
@@ -92,13 +106,138 @@ public class Generator {
             }
             String[] fl = full_name.split(" ");
 
+            while(true) {
+                p.clearParameters();
+                p.setString(1, fl[0]);
+                p.setString(2, fl[1]);
+                p.setInt(3, id);
 
+                try {
+                    p.executeUpdate();
+                    break;
+                } catch(SQLIntegrityConstraintViolationException e) {
+                    id++;
+                }
+            }
         }
     }
 
-    public static void main(String[] args) {
-        Generator gen = new Generator();
-        gen.generateNames(false);
+    /**
+     * Generates and inserts classes into the classes database. Uses the Rutgers SOC API to create
+     * class names.
+     * @param reset
+     */
+    public void generateClasses(boolean reset) {
+        final String[] subjectCodes = {"119", "160", "198", "358", "750", "640"};
+        final String endpoint = "http://sis.rutgers.edu/oldsoc/courses.json";
+        final String queryFormat = "?subject=%s&semester=92023&campus=NB&level=UG";
+
+        JSONArray raw;
+        for(String code : subjectCodes) {
+            String query = String.format(queryFormat, code);
+            if ((raw = retrieve(endpoint, query, null)) == null) {
+                System.out.println("could not retrieve courses");
+                break;
+            }
+            try {
+                buildAndInsertClasses(raw, reset);
+            } catch(Exception e) {
+                System.out.println("something went wrong inserting values into classes");
+                e.printStackTrace();
+            }
+
+            reset = false;
+        }
+
+        System.out.println("classes inserted successfully");
+    }
+
+    private void buildAndInsertClasses(JSONArray arr, boolean reset) throws SQLException {
+        if(reset) {
+            Statement stmt = dbcon.createStatement();
+            stmt.executeUpdate("delete from classes");
+        }
+
+        String s = "insert into classes values (?, ?)";
+        PreparedStatement p = dbcon.prepareStatement(s);
+
+        for(Object obj : arr) {
+            JSONObject course = (JSONObject)obj;
+
+            String title = (String)course.get("expandedTitle");
+            if(title == null || title.isBlank()) {
+                continue;
+            }
+            Object courseCredits = course.get("credits");
+            if (!(courseCredits instanceof Long) || (Long) courseCredits < 3) {
+                continue;
+            }
+            long credits = (long)course.get("credits");
+
+            title = title.replaceAll("\\s+", " ").trim();
+
+            try {
+                p.clearParameters();
+                p.setString(1, title);
+                p.setInt(2, (int)credits);
+                p.executeUpdate();
+            } catch(SQLIntegrityConstraintViolationException e) {
+                System.out.println("primary key:" + title + " - is already in the database!");
+            }
+        }
+    }
+
+    public void generateMajors() {
+        try {
+            Statement deptStmt = dbcon.createStatement();
+            ResultSet depts = deptStmt.executeQuery("select name from departments");
+            ArrayList<String> deptStrings = new ArrayList<>();
+            while(depts.next()) {
+                deptStrings.add(depts.getString(1));
+            }
+
+            Statement studentsStmt = dbcon.createStatement();
+            ResultSet students = studentsStmt.executeQuery("select id from students");
+
+            int id;
+            String s = "insert into majors values(?, ?)";
+            PreparedStatement p = dbcon.prepareStatement(s);
+            while(students.next()) {
+                id = students.getInt("id");
+
+                ArrayList<String> majors = pickNoReplacement(deptStrings, 1.5, 0.6);
+                for(String maj : majors) {
+                    p.clearParameters();
+                    p.setInt(1, id);
+                    p.setString(2, maj);
+                    p.executeUpdate();
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private ArrayList<String> pickNoReplacement(ArrayList<String> list, double mean, double stddev) {
+        ArrayList<String> result = new ArrayList<>();
+        ArrayList<String> copy = (ArrayList<String>)list.clone();
+        Random rand = new Random();
+        int numMajors = Math.abs((int)(rand.nextGaussian(mean, stddev)));
+
+        for(int i = 0; i < numMajors; i++) {
+            int pick = rand.nextInt(copy.size()-1);
+            result.add(copy.remove(pick));
+        }
+
+        return result;
+    }
+
+    public static void main(String[] args) throws Exception {
+        final String db = "jdbc:mysql://localhost:3306/hw3";
+        final String user = "root";
+        final String pass = System.getenv("pass");
+
+        Generator gen = new Generator(db, user, pass);
     }
 }
 
@@ -118,12 +257,14 @@ departments
     Bio - Busch, Chem - CAC, CS - Livi, Eng - CD, Math - Busch, Phys - CD
 
 majors
-    normal distribution centered around 0, with std of 1.5
-    take abs value. if 0, turn to 1
+    normal distribution centered around 1, with std of 0.8
+    take abs value
+    this should be the number of majors a student pursues, randomly selected from the list of departments
 
 minors
-    normally distributed with expected value of 0.0, std of 0.8
+    normally distributed with expected value of 0, std of 0.8
     take abs value
+    this should be the number of minors a student pursues, randomly selected from the list of departments
 
 is taking
     select 4-5 classes from classes database
