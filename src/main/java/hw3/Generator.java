@@ -4,6 +4,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Scanner;
 import java.util.Random;
 
@@ -18,11 +19,7 @@ public class Generator {
         dbcon = DriverManager.getConnection(db, user, pass);
     }
 
-    /**
-     * test constructor
-     */
-    private Generator() {
-    }
+
 
     /**
      * Generates and inserts into database 104 names.
@@ -53,7 +50,7 @@ public class Generator {
      * @param endpoint api endpoint
      * @param query api query
      * @param api_key api key
-     * @return an array of json objects, or null if not successful
+     * @return list of json objects, or null if not successful
      */
     private JSONArray retrieve(String endpoint, String query, String api_key) {
         try {
@@ -125,7 +122,7 @@ public class Generator {
     /**
      * Generates and inserts classes into the classes database. Uses the Rutgers SOC API to create
      * class names.
-     * @param reset
+     * @param reset true if we want to reset the courses
      */
     public void generateClasses(boolean reset) {
         final String[] subjectCodes = {"119", "160", "198", "358", "750", "640"};
@@ -187,7 +184,13 @@ public class Generator {
         }
     }
 
-    public void generateMajors() {
+    /**
+     * generates either majors or minors for students based off normal distribution
+     * @param major true if we are generating majors
+     */
+    public void generateMajorsMinors(boolean major) {
+        double[] params = major ? new double[]{1.5, 0.6} : new double[]{0, 1};
+
         try {
             Statement deptStmt = dbcon.createStatement();
             ResultSet depts = deptStmt.executeQuery("select name from departments");
@@ -200,12 +203,12 @@ public class Generator {
             ResultSet students = studentsStmt.executeQuery("select id from students");
 
             int id;
-            String s = "insert into majors values(?, ?)";
+            String s = major ? "insert into majors values(?, ?)" : "insert into minors values(?, ?)";
             PreparedStatement p = dbcon.prepareStatement(s);
             while(students.next()) {
                 id = students.getInt("id");
 
-                ArrayList<String> majors = pickNoReplacement(deptStrings, 1.5, 0.6);
+                ArrayList<String> majors = pickNoReplacement(deptStrings, params[0], params[1]);
                 for(String maj : majors) {
                     p.clearParameters();
                     p.setInt(1, id);
@@ -222,7 +225,7 @@ public class Generator {
         ArrayList<String> result = new ArrayList<>();
         ArrayList<String> copy = (ArrayList<String>)list.clone();
         Random rand = new Random();
-        int numMajors = Math.abs((int)(rand.nextGaussian(mean, stddev)));
+        int numMajors = (int)Math.abs(Math.round(rand.nextGaussian(mean, stddev)));
 
         for(int i = 0; i < numMajors; i++) {
             int pick = rand.nextInt(copy.size()-1);
@@ -231,6 +234,110 @@ public class Generator {
 
         return result;
     }
+
+    public void generateTaking() {
+        try {
+            Statement studentStmt = dbcon.createStatement();
+            ResultSet students = studentStmt.executeQuery("select id from students");
+
+            while(students.next()) {
+                addClasses(students.getInt("id"), true);
+            }
+
+            System.out.println("completed adding students' current courses");
+        } catch(Exception e) {
+            System.out.println("error querying from database");
+            e.printStackTrace();
+        }
+
+    }
+
+    public void generateTaken() {
+        try {
+            Statement studentStmt = dbcon.createStatement();
+            ResultSet students = studentStmt.executeQuery("select id from students");
+            ArrayList<Integer> studentsList = new ArrayList<>();
+
+            while(students.next()) {
+                studentsList.add(students.getInt("id"));
+            }
+
+            while(studentsList.size() > 0) {
+                studentsList.subList(0, 13).clear();
+                for(int student : studentsList) {
+                    addClasses(student, false);
+                }
+            }
+
+            System.out.println("completed adding students' past courses");
+        } catch(Exception e) {
+            System.out.println("error querying from database");
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * gets the list of classes a student hasn't taken/taking, and then picks 4-5 of these courses to add
+     * to their taken/taking list
+     * @param id id of student
+     * @param taking true if we are adding to taking list
+     */
+    private void addClasses(int id, boolean taking) {
+        Random rand = new Random();
+        try {
+            //get courses that student hasn't taken
+            Statement stmt = dbcon.createStatement();
+            ResultSet hasntTaken = stmt.executeQuery("select name " +
+                    "from classes " +
+                    "where name not in " +
+                    "(select cname from hasTaken where sid = '" + id + "') " +
+                    "or name not in " +
+                    "(select cname from isTaking where sid = '" + id + "')"
+            );
+            ArrayList<String> hasntTakenList = new ArrayList<>();
+            while(hasntTaken.next()) {
+                hasntTakenList.add(hasntTaken.getString("name"));
+            }
+
+            //select 4-5 from list
+            String s = taking ?
+                "insert into isTaking values(?, ?)" : "insert into hasTaken values(?, ?, ?)";
+            PreparedStatement ps = dbcon.prepareStatement(s);
+            Collections.shuffle(hasntTakenList);
+            int max = (int)(Math.random()*2+4);
+            for(int i = 0; i < max; i++) {
+                ps.clearParameters();
+                ps.setInt(1, id);
+                ps.setString(2, hasntTakenList.remove(0));
+                if(!taking) {
+                    ps.setString(3, getGrade());
+                }
+                ps.executeUpdate();
+            }
+        } catch(Exception e) {
+            e.printStackTrace();
+            System.out.println("could not add courses to student with id: " + id);
+        }
+    }
+
+    /**
+     * calculates a random grade based off a normal distribution
+     * @return a letter grade A-F
+     */
+    private String getGrade() {
+        String[] ref = {"F", "D", "C", "B", "A"};
+        Random rand = new Random();
+
+        double grade = rand.nextGaussian(2.8, 1.4);
+        if(grade < 0) {
+            grade = 0;
+        } else if(grade > 4) {
+            grade = 4;
+        }
+
+        return ref[(int)Math.round(grade)];
+    }
+
 
     public static void main(String[] args) throws Exception {
         final String db = "jdbc:mysql://localhost:3306/hw3";

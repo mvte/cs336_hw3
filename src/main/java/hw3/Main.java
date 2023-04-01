@@ -16,6 +16,9 @@ public class Main {
 
         //generator.generateNames(true);
         //generator.generateClasses(true);
-        generator.generateMajors();
+        //generator.generateMajorsMinors(true);
+        //generator.generateMajorsMinors(false);
+        //generator.generateTaking();
+        generator.generateTaken();
     }
 }
