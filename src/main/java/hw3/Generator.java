@@ -13,7 +13,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
 public class Generator {
-    Connection dbcon;
+    private final Connection dbcon;
 
     public Generator(String db, String user, String pass) throws Exception {
         dbcon = DriverManager.getConnection(db, user, pass);
@@ -189,16 +189,9 @@ public class Generator {
      * @param major true if we are generating majors
      */
     public void generateMajorsMinors(boolean major) {
-        double[] params = major ? new double[]{1.5, 0.6} : new double[]{0, 1};
+        double[] params = major ? new double[]{1, 0.6} : new double[]{0, 1};
 
         try {
-            Statement deptStmt = dbcon.createStatement();
-            ResultSet depts = deptStmt.executeQuery("select name from departments");
-            ArrayList<String> deptStrings = new ArrayList<>();
-            while(depts.next()) {
-                deptStrings.add(depts.getString(1));
-            }
-
             Statement studentsStmt = dbcon.createStatement();
             ResultSet students = studentsStmt.executeQuery("select id from students");
 
@@ -207,6 +200,20 @@ public class Generator {
             PreparedStatement p = dbcon.prepareStatement(s);
             while(students.next()) {
                 id = students.getInt("id");
+                String d = "select distinct name from departments " +
+                        "where name not in" +
+                        "(select dname from majors where sid = ?)" +
+                        "and name not in" +
+                        "(select dname from minors where sid = ?)";
+                PreparedStatement deptStmt = dbcon.prepareStatement(d);
+                deptStmt.setInt(1, id);
+                deptStmt.setInt(2, id);
+                ResultSet depts = deptStmt.executeQuery();
+
+                ArrayList<String> deptStrings = new ArrayList<>();
+                while(depts.next()) {
+                    deptStrings.add(depts.getString(1));
+                }
 
                 ArrayList<String> majors = pickNoReplacement(deptStrings, params[0], params[1]);
                 for(String maj : majors) {
@@ -291,7 +298,7 @@ public class Generator {
                     "from classes " +
                     "where name not in " +
                     "(select cname from hasTaken where sid = '" + id + "') " +
-                    "or name not in " +
+                    "and name not in " +
                     "(select cname from isTaking where sid = '" + id + "')"
             );
             ArrayList<String> hasntTakenList = new ArrayList<>();
