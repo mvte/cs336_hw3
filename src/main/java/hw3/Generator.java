@@ -276,7 +276,7 @@ public class Generator {
                 }
             }
 
-            System.out.println("completed adding students' past courses");
+            System.out.println("regenerated hasTaken table");
         } catch(Exception e) {
             System.out.println("error querying from database");
             e.printStackTrace();
@@ -335,7 +335,7 @@ public class Generator {
         String[] ref = {"F", "D", "C", "B", "A"};
         Random rand = new Random();
 
-        double grade = rand.nextGaussian(2.8, 1.4);
+        double grade = rand.nextGaussian(3.3, 1);
         if(grade < 0) {
             grade = 0;
         } else if(grade > 4) {
@@ -343,15 +343,6 @@ public class Generator {
         }
 
         return ref[(int)Math.round(grade)];
-    }
-
-
-    public static void main(String[] args) throws Exception {
-        final String db = "jdbc:mysql://localhost:3306/hw3";
-        final String user = "root";
-        final String pass = System.getenv("pass");
-
-        Generator gen = new Generator(db, user, pass);
     }
 }
 

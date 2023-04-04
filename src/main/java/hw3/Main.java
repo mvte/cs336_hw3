@@ -2,6 +2,8 @@ package hw3;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
 
 public class Main {
@@ -23,9 +25,6 @@ public class Main {
             System.out.println("error connecting to database, please restart the program");
             return;
         }
-
-        generator.generateMajorsMinors(true);
-        generator.generateMajorsMinors(false);
 
         printMenu();
         int in = read.nextInt();
@@ -60,25 +59,22 @@ public class Main {
                 searchByName();
                 break;
             case 2:
-                System.out.println("Query 2");
+                searchByYear();
                 break;
             case 3:
-                System.out.println("Query 3");
+                searchByGPA(true);
                 break;
             case 4:
-                System.out.println("Query 4");
+                searchByGPA(false);
                 break;
             case 5:
-                System.out.println("Query 5");
+                getDeptStats();
                 break;
             case 6:
                 System.out.println("Query 6");
                 break;
             case 7:
                 System.out.println("Query 7");
-                break;
-            case 8:
-                System.out.println("Query 8");
                 break;
             default:
                 System.out.println("Invalid input");
@@ -91,6 +87,64 @@ public class Main {
         String name = read.next();
         try {
             String result = inquirer.searchByName(name);
+            System.out.println(result);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Error executing query");
+        }
+    }
+
+    private static void searchByYear() {
+        List<String> ref = List.of("fr", "so", "jr", "sr");
+        System.out.println("Please enter a year:");
+        String year = read.next().toLowerCase();
+        if(!ref.contains(year)){
+            System.out.println("Invalid year");
+            return;
+        }
+
+        try {
+            String result = inquirer.searchByYear(year);
+            System.out.println(result);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Error executing query");
+        }
+    }
+
+    private static void searchByGPA(boolean min) {
+        System.out.println("Please enter the threshold:");
+        double gpa = read.nextDouble();
+        while(gpa < 0 || gpa > 4.0){
+            System.out.println("Invalid GPA, please enter a value between 0 and 4.0");
+            gpa = read.nextDouble();
+        }
+        try {
+            String result = min ? inquirer.searchByGPA(gpa, 4.1) : inquirer.searchByGPA(-0.1, gpa);
+            System.out.println(result);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Error executing query");
+        }
+    }
+
+    private static void getDeptStats() {
+        System.out.println("Please enter a department name:");
+        String dept = read.next();
+        try {
+            String result = inquirer.getDeptStats(dept);
+            System.out.println(result);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Error executing query");
+        }
+    }
+
+    private static void getClassStats() {
+        System.out.println("Please enter a class name:");
+        String name = read.next();
+        try {
+            String result = inquirer.getClassStats(name);
             System.out.println(result);
         } catch (SQLException e) {
             e.printStackTrace();
