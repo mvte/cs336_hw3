@@ -98,6 +98,13 @@ public class Inquirer {
         return res.substring(0, res.length()-1);
     }
 
+    /**
+     * Returns a string containing the student's name, id, major(s), minor(s), gpa, and credit if they are
+     * in the given year. The year a student is in is determined by how many credits they have.
+     * @param year the year to search for
+     * @return a string containing the student's name, id, major(s), minor(s), gpa, and credit
+     * @throws SQLException if the query fails
+     */
     public String searchByYear(String year) throws SQLException {
         String query = "select sid"
                 + " from student_credits"
@@ -155,7 +162,7 @@ public class Inquirer {
      * @param min minimum gpa
      * @param max maximum gpa
      * @return string containing student info for all students with a GPA between min and max
-     * @throws SQLException
+     * @throws SQLException if the query fails
      */
     public String searchByGPA(double min, double max) throws SQLException {
         String query = "select id from student_grades where GPA >= ? and GPA <= ?";
@@ -174,14 +181,14 @@ public class Inquirer {
     /**
      * Returns a string containing the number of students and average GPA for the given department.
      * Department stats were obtained from a view that was created with the following query:
-     *      create view deptStats as
-     *      select m.dname, count(distinct m.sid) as numStudents, avg(sg.gpa) as avgGpa
-     *      from majors m join student_grades sg on sg.id = m.sid
+     *      create view deptstats as
+     *      select m.dname, count(m.sid) as numStudents, avg(sg.gpa) as avgGpa
+     *      from (select * from majors union select * from minors) m join student_grades sg on sg.id = m.sid
      *      group by m.dname
      * See searchByGPA() for more information on the student_grades view.
      * @param dept The department to get stats for.
      * @return String containing the number of students and average GPA for the given department.
-     * @throws SQLException
+     * @throws SQLException if the query fails
      */
     public String getDeptStats(String dept) throws SQLException {
         String query = "select numStudents, avgGpa from deptStats where dname = ?";
@@ -198,21 +205,47 @@ public class Inquirer {
     }
 
     public String getClassStats(String course) throws SQLException{
-        String q1 = "select count(c.sid) as numStudents" +
-                "from classes c left outer join isTaking t on c.name = t.cname" +
-                "where c.name = ? " +
-                "group by c.name";
+        course = course.toUpperCase();
+        String result = course + "\n";
+        String q1 = "select count(t.sid) as numStudents " +
+            "from classes c left outer join isTaking t on t.cname = c.name " +
+            "where c.name = ? " +
+            "group by c.name";
         String q2 = "select t.grade, count(t.grade) as numStudents " +
                 "from hasTaken t left outer join classes c on c.name = t.cname " +
                 "where c.name = ? " +
                 "group by t.grade ";
 
-        PreparedStatement stmt = dbcon.prepareStatement(q1);
-        stmt.setString(1, course);
-        ResultSet num = stmt.executeQuery();
+        PreparedStatement p1 = dbcon.prepareStatement(q1);
+        p1.setString(1, course);
+        ResultSet num = p1.executeQuery();
+        if(!num.next())
+            return "No such course exists";
+        result += num.getInt("numStudents") + " students currently enrolled. \n" +
+                "Grades of previous enrollees: \n";
 
+        PreparedStatement p2 = dbcon.prepareStatement(q2);
+        p2.setString(1, course);
+        ResultSet grades = p2.executeQuery();
+        while(grades.next()){
+            result += grades.getString("grade") + " " + grades.getInt("numStudents") + "\n";
+        }
 
+        return result;
+    }
 
-        return "";
+    public String customQuery(String query) throws SQLException {
+        Statement stmt = dbcon.createStatement();
+        ResultSet rs = stmt.executeQuery(query);
+        ResultSetMetaData rsmd = rs.getMetaData();
+        int numCols = rsmd.getColumnCount();
+        String res = "";
+        while (rs.next()) {
+            for (int i = 1; i <= numCols; i++) {
+                res += rsmd.getColumnName(i) + ": " + rs.getString(i) + "\t";
+            }
+            res += "\n";
+        }
+        return res;
     }
 }

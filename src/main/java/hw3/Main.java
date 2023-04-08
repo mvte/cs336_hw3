@@ -27,12 +27,14 @@ public class Main {
         }
 
         printMenu();
-        int in = read.nextInt();
-        while (in != 8) {
+        String in = read.nextLine();
+        while (!in.equals("8")) {
             handle(in);
 
             System.out.println("Which query would you like to run? (1-8)");
-            in = read.nextInt();
+            in = read.next();
+
+            read.nextLine();
         }
 
         read.close();
@@ -53,38 +55,22 @@ public class Main {
         System.out.println("Which query would you like to run? (1-8)");
     }
 
-    private static void handle(int in) {
+    private static void handle(String in) {
         switch (in) {
-            case 1:
-                searchByName();
-                break;
-            case 2:
-                searchByYear();
-                break;
-            case 3:
-                searchByGPA(true);
-                break;
-            case 4:
-                searchByGPA(false);
-                break;
-            case 5:
-                getDeptStats();
-                break;
-            case 6:
-                System.out.println("Query 6");
-                break;
-            case 7:
-                System.out.println("Query 7");
-                break;
-            default:
-                System.out.println("Invalid input");
-                break;
+            case "1" -> searchByName();
+            case "2" -> searchByYear();
+            case "3" -> searchByGPA(true);
+            case "4" -> searchByGPA(false);
+            case "5" -> getDeptStats();
+            case "6" -> getClassStats();
+            case "7" -> customQuery();
+            default -> System.out.println("Invalid input");
         }
     }
 
     private static void searchByName(){
         System.out.println("Enter a name to search for:");
-        String name = read.next();
+        String name = read.nextLine();
         try {
             String result = inquirer.searchByName(name);
             System.out.println(result);
@@ -97,7 +83,7 @@ public class Main {
     private static void searchByYear() {
         List<String> ref = List.of("fr", "so", "jr", "sr");
         System.out.println("Please enter a year:");
-        String year = read.next().toLowerCase();
+        String year = read.nextLine().toLowerCase();
         if(!ref.contains(year)){
             System.out.println("Invalid year");
             return;
@@ -130,7 +116,7 @@ public class Main {
 
     private static void getDeptStats() {
         System.out.println("Please enter a department name:");
-        String dept = read.next();
+        String dept = read.nextLine();
         try {
             String result = inquirer.getDeptStats(dept);
             System.out.println(result);
@@ -142,9 +128,21 @@ public class Main {
 
     private static void getClassStats() {
         System.out.println("Please enter a class name:");
-        String name = read.next();
+        String name = read.nextLine();
         try {
             String result = inquirer.getClassStats(name);
+            System.out.println(result);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            System.out.println("Error executing query (class not found)");
+        }
+    }
+
+    private static void customQuery() {
+        System.out.println("Please enter the query.");
+        String query = read.nextLine();
+        try {
+            String result = inquirer.customQuery(query);
             System.out.println(result);
         } catch (SQLException e) {
             e.printStackTrace();
