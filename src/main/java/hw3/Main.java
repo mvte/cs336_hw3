@@ -22,7 +22,14 @@ public class Main {
             inquirer = new Inquirer(db, user, pass);
             System.out.println("Connection success");
         } catch (Exception e) {
-            System.out.println("error connecting to database, please restart the program");
+            System.out.println("Error connecting to database, please restart the program");
+            return;
+        }
+
+        try {
+            generator.initializeViews();
+        } catch (Exception e) {
+            System.out.println("Could not create views, please restart the program");
             return;
         }
 
@@ -40,6 +47,7 @@ public class Main {
         read.close();
         System.out.println("Goodbye.");
 
+        generator.destroyViews();
     }
 
     private static void printMenu() {
@@ -142,8 +150,7 @@ public class Main {
         System.out.println("Please enter the query.");
         String query = read.nextLine();
         try {
-            String result = inquirer.customQuery(query);
-            System.out.println(result);
+            inquirer.customQuery(query);
         } catch (SQLException e) {
             e.printStackTrace();
             System.out.println("Error executing query");
