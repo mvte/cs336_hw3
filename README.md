@@ -5,7 +5,8 @@ Section 07
 ## Project Information/Usage
 This project was built using Gradle. MySQL dependencies and other dependencies can be found in the build.gradle file. To run the project, 
 navigate to the root directory and use the following command: \
-`./gradlew --console plain run --args="[db_url] [db_user] [db_password]"`.
+`./gradlew --console plain run --args="[db_url] [db_username] [db_password]"` \
+Change the url, username, and password as needed. Note that you only need to provide the hostname and port, since `jdbc:mysql://` will be prepended.
 
 ## Random Data Generation
 All tables, except for departments, were loaded into the database by iterating with prepared statements.
