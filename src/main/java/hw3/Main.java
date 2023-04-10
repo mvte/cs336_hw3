@@ -7,28 +7,35 @@ import java.util.List;
 import java.util.Scanner;
 
 public class Main {
-    static final String db = "jdbc:mysql://localhost:3306/hw3";
-    static final String user = "root";
-    static final String pass = System.getenv("pass");
+    static String db = "jdbc:mysql://localhost:3306/hw3";
+    static String user = "root";
+    static String pass = System.getenv("pass");
 
     static Generator generator;
     static Inquirer inquirer;
     static Scanner read;
 
     public static void main(String[] args) {
+        if(args.length == 3) {
+            db = "jdbc:mysql://" + args[0];
+            user = args[1];
+            pass = args[2];
+        }
+
         read = new Scanner(System.in);
         try {
             generator = new Generator(db, user, pass);
             inquirer = new Inquirer(db, user, pass);
             System.out.println("Connection success");
         } catch (Exception e) {
-            System.out.println("Error connecting to database, please restart the program");
+            System.out.println("Error connecting to database, please check your arguments and restart the program");
             return;
         }
 
         try {
             generator.initializeViews();
         } catch (Exception e) {
+            e.printStackTrace();
             System.out.println("Could not create views, please restart the program");
             return;
         }

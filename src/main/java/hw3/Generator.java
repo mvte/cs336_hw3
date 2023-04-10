@@ -26,6 +26,8 @@ public class Generator {
      * student_credits is a view that contains a student's id and the number of credits they have taken.
      */
     public void initializeViews() throws SQLException{
+        destroyViews();
+
         String studentCreditsString = "create view student_credits as " +
                 "select t.sid as sid, sum(c.credits) as creditsTaken " +
                 "from hastaken t join classes c on t.name = c.name " +
