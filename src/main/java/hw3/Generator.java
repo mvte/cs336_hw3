@@ -357,7 +357,7 @@ public class Generator {
      * gets the list of classes a student hasn't taken/taking, and then picks 4-5 of these courses to add
      * to their taken/taking list
      * @param id id of student
-     * @param taking true if we are adding to taking list
+     * @param taking true if we are adding to taking list, false if we are adding to taken list
      */
     private void addClasses(int id, boolean taking) {
         Random rand = new Random();

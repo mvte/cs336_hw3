@@ -80,7 +80,7 @@ public class Inquirer {
     /**
      * Returns a string containing the student's name, id, major(s), minor(s), gpa, and credit if their either their
      * first or last name contains the given string.
-     * @param name
+     * @param name the substring to search for
      * @return a string containing information about students that match the given substring
      * @throws SQLException
      */
