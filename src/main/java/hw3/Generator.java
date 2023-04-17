@@ -63,6 +63,7 @@ public class Generator {
      * Drops the temporary views student_credits, student_grades, and deptstats.
      */
     public void destroyViews() {
+
         try {
             Statement stmt = dbcon.createStatement();
             stmt.executeUpdate("drop view student_credits;");
@@ -282,7 +283,6 @@ public class Generator {
 
                 ArrayList<String> deptStrings = new ArrayList<>();
                 while(depts.next()) {
-                    System.out.println(depts.getString(1));
                     deptStrings.add(depts.getString(1));
                 }
 
