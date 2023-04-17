@@ -74,6 +74,10 @@ public class Generator {
         }
     }
 
+    /**
+     * Generates and inserts into database values for all classes.
+     * Assumes that tables already exists, and that they are empty.
+     */
     public void generateAll() {
         generateNames(true);
         generateClasses(true);
@@ -322,6 +326,10 @@ public class Generator {
         return result;
     }
 
+    /**
+     * Creates relations between students and classes that they would be taking.
+     * It is assumed that each student is taking 4-5 classes if they are enrolled in the semester.
+     */
     public void generateTaking() {
         try {
             Statement studentStmt = dbcon.createStatement();
@@ -339,6 +347,10 @@ public class Generator {
 
     }
 
+    /**
+     * Creates relations between students and classes that they have already taken, also associating grades.
+     * To create even amounts of students in each year, I trim the list of students every iteration we associate courses.
+     */
     public void generateTaken() {
         try {
             Statement studentStmt = dbcon.createStatement();

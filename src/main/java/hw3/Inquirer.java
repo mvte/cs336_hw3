@@ -82,7 +82,7 @@ public class Inquirer {
      * first or last name contains the given string.
      * @param name the substring to search for
      * @return a string containing information about students that match the given substring
-     * @throws SQLException
+     * @throws SQLException if the query fails or there is an error with the database
      */
     public String searchByName(String name) throws SQLException {
         String query = "select * from students where first_name like ? or last_name like ?";
@@ -229,7 +229,6 @@ public class Inquirer {
      * @throws SQLException if the query fails
      */
     public void customQuery(String query) throws SQLException {
-        String res = "";
         Statement stmt = dbcon.createStatement();
         ResultSet rs = stmt.executeQuery(query);
 
