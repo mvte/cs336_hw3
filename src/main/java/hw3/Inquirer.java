@@ -223,7 +223,7 @@ public class Inquirer {
     }
 
     /**
-     * Returns a string containing the number of students taking a class, and the grades of students who have
+     * Prints out the result of a custom query.
      * Uses the DBTablePrinter class, shout out to htorun for making this class public.
      * @param query The query to execute
      * @throws SQLException if the query fails
