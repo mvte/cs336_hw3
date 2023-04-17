@@ -73,6 +73,15 @@ public class Generator {
         }
     }
 
+    public void generateAll() {
+        generateNames(true);
+        generateClasses(true);
+        generateMajorsMinors(true);
+        generateMajorsMinors(false);
+        generateTaking();
+        generateTaken();
+    }
+
     /**
      * Generates and inserts into database 104 names.
      * @param reset true if we want to reset the values already in the table
@@ -297,6 +306,7 @@ public class Generator {
      * @param stddev the standard deviation of the normal distribution
      * @return a list of items picked from the list
      */
+    @SuppressWarnings("unchecked")
     private ArrayList<String> pickNoReplacement(ArrayList<String> list, double mean, double stddev) {
         ArrayList<String> result = new ArrayList<>();
         ArrayList<String> copy = (ArrayList<String>)list.clone();
@@ -360,7 +370,6 @@ public class Generator {
      * @param taking true if we are adding to taking list, false if we are adding to taken list
      */
     private void addClasses(int id, boolean taking) {
-        Random rand = new Random();
         try {
             //get courses that student hasn't taken
             Statement stmt = dbcon.createStatement();

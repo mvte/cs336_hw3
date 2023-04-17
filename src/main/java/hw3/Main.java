@@ -1,8 +1,6 @@
 package hw3;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
@@ -79,6 +77,7 @@ public class Main {
             case "5" -> getDeptStats();
             case "6" -> getClassStats();
             case "7" -> customQuery();
+            case "//generate" -> generator.generateAll();
             default -> System.out.println("Invalid input");
         }
     }
