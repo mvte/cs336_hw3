@@ -96,7 +96,7 @@ public class Main {
 
     private static void searchByYear() {
         List<String> ref = List.of("fr", "so", "jr", "sr");
-        System.out.println("Please enter a year:");
+        System.out.println("Please enter a year (Fr, So, Jr, Sr):");
         String year = read.nextLine().toLowerCase();
         if(!ref.contains(year)){
             System.out.println("Invalid year");
@@ -113,7 +113,7 @@ public class Main {
     }
 
     private static void searchByGPA(boolean min) {
-        System.out.println("Please enter the threshold:");
+        System.out.println("Please enter the " + (min ? "minimum" : "maximum") + " threshold:");
         double gpa = read.nextDouble();
         while(gpa < 0 || gpa > 4.0){
             System.out.println("Invalid GPA, please enter a value between 0 and 4.0");
