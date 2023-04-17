@@ -49,7 +49,7 @@ public class Generator {
                 " group by s.id;";
         String deptStatsString = "create view deptstats as " +
                 "select m.dname, count(m.sid) as numStudents, avg(sg.gpa) as avgGpa " +
-                "from (select * from majors union select * from minors) m join student_grades sg on sg.id = m.sid " +
+                "from (select * from majors union select * from minors) m left outer join student_grades sg on sg.id = m.sid " +
                 "group by m.dname;";
 
         Statement stmt = dbcon.createStatement();
