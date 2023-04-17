@@ -8,7 +8,7 @@ navigate to the root directory and use the following command:
 
 - `./gradlew --console plain run --args="[db_url] [db_username] [db_password]"`
 
-Change the url, username, and password as needed. Note that you only need to provide the hostname and port, since `jdbc:mysql://` will be prepended.
+Change the url, username, and password as needed. Note that you only need to provide the hostname, port, and schema, since `jdbc:mysql://` will be prepended.
 
 ## Random Data Generation
 All tables, except for departments, were loaded into the database by iterating with prepared statements.

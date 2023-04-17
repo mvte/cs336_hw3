@@ -63,6 +63,7 @@ public class Generator {
      * Drops the temporary views student_credits, student_grades, and deptstats.
      */
     public void destroyViews() {
+        //make sure that the views exist first
         try {
             DatabaseMetaData dbm = dbcon.getMetaData();
             ResultSet student_credits = dbm.getTables(null, null, "student_credits", new String[]{"VIEW"});
